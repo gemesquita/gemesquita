@@ -1,7 +1,17 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=2,3,4,5,6&height=180&section=header&text=Gonçalo%20Mesquita&fontSize=42&fontColor=fff&animation=fadeIn&fontAlignY=35&desc=Portuguese%20🇵🇹%20studying%20in%20Amsterdam%20🇳🇱&descSize=18&descAlignY=55"/>
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=2,3,4,5,6&height=180&section=header&text=Gonçalo%20Mesquita&fontSize=42&fontColor=fff&animation=fadeIn&fontAlignY=35&desc=Portuguese%20🇵🇹%20studying%20in%20Amsterdam%20🇳🇱&descSize=18&descAlignY=55"/>
-</picture>
+<div align="center">
+
+```
+   ██████╗  ██████╗ ███╗   ██╗ ██████╗  █████╗ ██╗      ██████╗ 
+  ██╔════╝ ██╔═══██╗████╗  ██║██╔════╝██╔══██╗██║     ██╔═══██╗
+  ██║  ███╗██║   ██║██╔██╗ ██║██║     ███████║██║     ██║   ██║
+  ██║   ██║██║   ██║██║╚██╗██║██║     ██╔══██║██║     ██║   ██║
+  ╚██████╔╝╚██████╔╝██║ ╚████║╚██████╗██║  ██║███████╗╚██████╔╝
+   ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ 
+```
+
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=24&pause=1000&color=22C55E&center=true&vCenter=true&random=false&width=600&lines=Full-Stack+Developer;Portuguese+%F0%9F%87%B5%F0%9F%87%B9+in+Amsterdam+%F0%9F%87%B3%F0%9F%87%B1;CS+Honours+%40+VU+Amsterdam)](https://git.io/typing-svg)
+
+</div>
 
 <br/>
 
@@ -10,7 +20,7 @@
 ### `> whoami`
 
 ```javascript
-const gonçalo = {
+const goncalo = {
     location: "Amsterdam 🇳🇱",
     origin: "Portugal 🇵🇹",
     studying: "CS Honours @ VU Amsterdam",
@@ -67,10 +77,14 @@ const gonçalo = {
   <img src="https://github-readme-stats.vercel.app/api?username=gemesquita&show_icons=true&theme=dark&hide_border=true&bg_color=0d1117&title_color=22c55e&icon_color=4ade80&text_color=9ca3af" width="49%"/>
 </p>
 
+<p align="center">
+  <img src="https://github-readme-activity-graph.vercel.app/graph?username=gemesquita&bg_color=0d1117&color=22c55e&line=4ade80&point=22c55e&area=true&hide_border=true" width="98%"/>
+</p>
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gemesquita/gemesquita/output/github-snake-dark.svg" />
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gemesquita/gemesquita/output/github-snake.svg" />
-  <img alt="github-snake" src="https://raw.githubusercontent.com/gemesquita/gemesquita/output/github-snake-dark.svg" />
+  <img alt="Snake animation" src="https://raw.githubusercontent.com/gemesquita/gemesquita/output/github-snake-dark.svg" />
 </picture>
 
 ---
@@ -89,9 +103,6 @@ const gonçalo = {
   </a>
 </p>
 
-<br/>
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=2,3,4,5,6&height=100&section=footer"/>
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=2,3,4,5,6&height=100&section=footer"/>
-</picture>
+<p align="center">
+  <img src="https://komarev.com/ghpvc/?username=gemesquita&color=22c55e&style=flat-square&label=Profile+Views"/>
+</p>
