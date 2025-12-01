@@ -6,7 +6,9 @@
   ██║  ███╗██║   ██║██╔██╗ ██║██║     ███████║██║     ██║   ██║
   ██║   ██║██║   ██║██║╚██╗██║██║     ██╔══██║██║     ██║   ██║
   ╚██████╔╝╚██████╔╝██║ ╚████║╚██████╗██║  ██║███████╗╚██████╔╝
-   ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ 
+   ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝
+                                ██
+                              ╚═╝ 
 ```
 
 [![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=24&pause=1000&color=22C55E&center=true&vCenter=true&random=false&width=600&lines=Professional+bug+creator;Portuguese+%F0%9F%87%B5%F0%9F%87%B9+in+Amsterdam+%F0%9F%87%B3%F0%9F%87%B1;CS+Honours+%40+VU+Amsterdam)](https://git.io/typing-svg)
@@ -25,7 +27,7 @@ const goncalo = {
     origin: "Portugal 🇵🇹",
     studying: "CS Honours @ VU Amsterdam",
     building: "unight",
-    focus: ["systems", "HPC", "algorithms"],
+    focus: ["Full Stack Development", "HPC", "Algorithms"],
     currentlyLearning: "TypeScript"
 };
 ```
