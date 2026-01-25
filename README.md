@@ -26,9 +26,9 @@ const goncalo = {
     location: "Amsterdam 🇳🇱",
     origin: "Portugal 🇵🇹",
     studying: "CS Honours @ VU Amsterdam",
-    building: "unight",
+    building: "some side projects",
     focus: ["Full Stack Development", "HPC", "Algorithms"],
-    currentlyLearning: "TypeScript"
+    currentlyLearning: "Databases,PostgresSQL"
 };
 ```
 
