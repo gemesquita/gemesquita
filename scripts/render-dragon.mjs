@@ -68,11 +68,11 @@ const dirAt = (t) => { if (t < 0) return [1, 0]; const i = Math.min(STEPS - 1, M
 const CELL = 18, GAP = 4, BLOCK = CELL - GAP, PAD = 16;
 const W = COLS * CELL + PAD * 2, H = ROWS * CELL + PAD * 2;
 const themes = {
-  dark: { bg: [13, 17, 23], dots: [[28, 33, 40], [59, 64, 72], [110, 118, 129], [163, 170, 179], [230, 237, 243]], body: [222, 228, 235], accent: [139, 148, 158], hi: [255, 255, 255], sh: [150, 158, 168] },
-  light: { bg: [255, 255, 255], dots: [[235, 237, 240], [201, 201, 201], [143, 143, 143], [87, 87, 87], [31, 31, 31]], body: [104, 104, 104], accent: [170, 170, 170], hi: [150, 150, 150], sh: [52, 52, 52] },
+  dark: { bg: [13, 17, 23], dots: [[28, 33, 40], [59, 64, 72], [110, 118, 129], [163, 170, 179], [230, 237, 243]], body: [222, 228, 235], accent: [139, 148, 158], hi: [255, 255, 255], sh: [150, 158, 168], out: [62, 70, 82] },
+  light: { bg: [255, 255, 255], dots: [[235, 237, 240], [201, 201, 201], [143, 143, 143], [87, 87, 87], [31, 31, 31]], body: [118, 118, 118], accent: [170, 170, 170], hi: [160, 160, 160], sh: [72, 72, 72], out: [22, 22, 22] },
 };
-// palette (16 slots): 0 bg, 1..5 dot levels 0..4, 6 body, 7 accent, 8 highlight, 9 shadow
-const BODY = 6, ACC = 7, HI = 8, SH = 9;
+// palette (16 slots): 0 bg, 1..5 dot levels 0..4, 6 body, 7 accent, 8 highlight, 9 shadow, 10 outline
+const BODY = 6, ACC = 7, HI = 8, SH = 9, OUT = 10;
 const BLINK_EVERY = 45 * SUB, BLINK_FRAMES = 3 * SUB;
 const px = new Uint8Array(W * H), prev = new Uint8Array(W * H);
 const put = (x, y, i) => { if (x >= 0 && y >= 0 && x < W && y < H) px[x + y * W] = i; };
@@ -80,36 +80,44 @@ const rect = (x0, y0, w, h, i) => { for (let y = y0; y < y0 + h; y++) for (let x
 const disc = (cx, cy, r, i) => { for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r) put(cx + x, cy + y, i); };
 const center = ([c, r]) => [Math.round(PAD + c * CELL + BLOCK / 2), Math.round(PAD + r * CELL + BLOCK / 2)];   // cell coords may be fractional
 
-// Head, facing right, in 2x2 chunks. Lit from above: * highlight, # body, = shadow, + whiskers, o eye
-const HEAD = [
-  "....*.......*.........",
-  "....**......**........",
-  "....*#*....*#*........",
-  ".....*#*..*#*.........",
-  "......*######*........",
-  "....**#########*......",
-  "...*##############*...",
-  "..*###oo###########...",
-  "..####oo############..",
-  ".###################*+",
-  ".#################==.+",
-  "..######===========...",
-  "...=====..=========+..",
-  "...====....========...",
-  "....==......======+...",
-  ".....+........===.....",
+// Head: front view, always upright, in 2x2 chunks. Drawn as the left half plus the centre column and mirrored,
+// with highlights on the left turning into shadows on the right so the light comes from one side.
+// O outline, # fill, * highlight, = shadow, o eye, . empty
+const HALF = [
+  "..O........",
+  ".O*O..O....",
+  ".O#O.O*O...",
+  "..O#O#*#O..",
+  "..O##**#O..",
+  "...O###O...",
+  "...O###O...",
+  "...O###O.O.",
+  "..OO###OOOO",
+  ".O*#####*##",
+  "O*#########",
+  ".O#########",
+  "O*##OOO####",
+  ".O##O*oo###",
+  "O*###Ooo###",
+  ".OO###OO###",
+  "..O=#######",
+  "...O=######",
+  "...O==#####",
+  "....O==####",
+  "....O=O####",
+  ".....O=####",
+  ".....O=O###",
+  ".....OO#OO#",
+  "......OOOOO",
 ];
-const ANCHOR = [7, 8];   // chunk that sits on the head cell's centre (the eye), so the open jaws reach the pearl ahead
+const HEAD = HALF.map((l) => l + l.slice(0, 10).split("").reverse().map((ch) => (ch === "*" ? "=" : ch)).join(""));
+const ANCHOR = [10, 13];   // chunk that sits on the head cell's centre (between the eyes)
 function drawHead(cell, dir, blink) {
   const [cx, cy] = center(cell);
-  const [fx, fy] = dir;
   for (let r = 0; r < HEAD.length; r++) for (let c = 0; c < HEAD[r].length; c++) {
     const ch = HEAD[r][c]; if (ch === ".") continue;
-    const idx = ch === "#" ? BODY : ch === "+" ? ACC : ch === "*" ? HI : ch === "=" ? SH : blink ? (r === 7 ? BODY : SH) : 0;   // eye: open = bg pupil, blinking = closed line
-    const u = c - ANCHOR[0], v = r - ANCHOR[1];
-    // facing right: as drawn; left: mirrored; up/down: rotated, horns staying on the outside of the turn
-    const [uu, vv] = fx === -1 ? [-u, v] : [u * fx - v * fy, u * fy + v * fx];
-    rect(cx + uu * 2 - 1, cy + vv * 2 - 1, 2, 2, idx);
+    const idx = ch === "#" ? BODY : ch === "*" ? HI : ch === "=" ? SH : ch === "O" ? OUT : blink ? BODY : OUT;   // eyes close to plain fill under the brow line
+    rect(cx + (c - ANCHOR[0]) * 2 - 1, cy + (r - ANCHOR[1]) * 2 - 1, 2, 2, idx);
   }
 }
 // a rectangle placed along the perpendicular axis p, `dist` px out from a segment centre, `thick` along p and `width` across it
@@ -183,7 +191,7 @@ function gif(theme) {
   const dbg = process.env.DEBUG_FRAME ? (process.env.DEBUG_FULL ? { w: W, h: H, s: 1 } : { w: 200, h: 100, s: 4 }) : null;   // DEBUG_FRAME=n: a still; DEBUG_FULL=1: whole grid instead of a magnified crop around the head
   push(...Buffer.from("GIF89a"));
   push(...u16(dbg ? dbg.w * dbg.s : W), ...u16(dbg ? dbg.h * dbg.s : H), 0xf3, 0, 0);   // 16-colour global table
-  push(...theme.bg, ...theme.dots.flat(), ...theme.body, ...theme.accent, ...theme.hi, ...theme.sh, ...new Array(6 * 3).fill(0));
+  push(...theme.bg, ...theme.dots.flat(), ...theme.body, ...theme.accent, ...theme.hi, ...theme.sh, ...theme.out, ...new Array(5 * 3).fill(0));
   push(0x21, 0xff, 0x0b, ...Buffer.from("NETSCAPE2.0"), 3, 1, 0, 0, 0);
   prev.fill(255);
   const only = process.env.DEBUG_FRAME ? [Number(process.env.DEBUG_FRAME)] : null;   // DEBUG_FRAME=n writes a single still frame
