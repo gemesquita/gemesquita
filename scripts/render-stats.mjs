@@ -145,14 +145,15 @@ function streakCard({ fg, mute, line }) {
   const W = 410, H = 196;
   // all three columns share the same baselines: number, label, date range
   const col = (cx, n, label, dates, big) => {
-    let s = `<text x="${cx}" y="100" text-anchor="middle" font-family="${SANS}" font-size="${big ? 40 : 32}" font-weight="800" letter-spacing="-1.5" fill="${fg}">${fmt(n)}</text>\n`;
+    // the ringed number sits higher than the side numbers so the ring clears the label row
+    let s = `<text x="${cx}" y="${big ? 82 : 100}" text-anchor="middle" font-family="${SANS}" font-size="${big ? 40 : 32}" font-weight="800" letter-spacing="-1.5" fill="${fg}">${fmt(n)}</text>\n`;
     s += `<text x="${cx}" y="142" text-anchor="middle" font-family="${MONO}" font-size="10" letter-spacing="1.5" fill="${mute}">${label}</text>\n`;
-    s += `<text x="${cx}" y="160" text-anchor="middle" font-family="${MONO}" font-size="8.5" fill="${mute}">${dates}</text>\n`;
+    s += `<text x="${cx}" y="160" text-anchor="middle" font-family="${MONO}" font-size="7.5" fill="${mute}">${dates}</text>\n`;
     return s;
   };
   let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${fmt(contributions)} contributions in the last year, current streak ${current.len} days, longest streak ${longest.len} days">\n`;
   s += `<rect x="0.5" y="0.5" width="${W - 1}" height="${H - 1}" fill="none" stroke="${line}"/>\n`;
-  s += `<circle cx="205" cy="87" r="38" fill="none" stroke="${fg}" stroke-width="2"/>\n`;
+  s += `<circle cx="205" cy="68" r="38" fill="none" stroke="${fg}" stroke-width="2"/>\n`;
   s += col(72, contributions, "CONTRIBUTIONS", `${date(days[0]?.date)} – present`, false);
   s += col(205, current.len, "CURRENT STREAK", current.len ? `${date(current.from)} – ${date(current.to)}` : "no active streak", true);
   s += col(338, longest.len, "LONGEST STREAK", longest.len ? `${date(longest.from)} – ${date(longest.to)}` : "", false);
