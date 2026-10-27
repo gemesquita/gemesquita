@@ -21,7 +21,7 @@ const query = `query($login: String!, $from: DateTime!) {
       contributionCalendar { totalContributions }
       commitContributionsByRepository(maxRepositories: 100) {
         contributions { totalCount }
-        repository { languages(first: 10, orderBy: { field: SIZE, direction: DESC }) { edges { size node { name } } } }
+        repository { isPrivate languages(first: 10, orderBy: { field: SIZE, direction: DESC }) { edges { size node { name } } } }
       }
     }
     year: contributionsCollection(from: $from) { totalCommitContributions }
@@ -50,6 +50,8 @@ const weight = {};
 for (const c of u.all.commitContributionsByRepository) {
   const edges = c.repository.languages.edges.filter((e) => !SKIP.has(e.node.name));
   const repoTotal = edges.reduce((s, e) => s + e.size, 0);
+  // anonymised breakdown for the Actions log (no repo names: the log is public)
+  console.log(`${c.repository.isPrivate ? "private" : "public "} ${String(c.contributions.totalCount).padStart(4)} commits  ${edges.slice(0, 3).map((e) => `${e.node.name} ${Math.round((e.size / (repoTotal || 1)) * 100)}%`).join(", ") || "(no code languages)"}`);
   if (!repoTotal) continue;
   for (const e of edges) weight[e.node.name] = (weight[e.node.name] || 0) + (e.size / repoTotal) * c.contributions.totalCount;
 }
