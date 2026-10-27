@@ -26,12 +26,12 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github-readme-stats.vercel.app/api?username=gemesquita&show_icons=true&count_private=true&bg_color=00000000&title_color=e6edf3&text_color=8b949e&icon_color=e6edf3&border_color=30363d" />
-    <img src="https://github-readme-stats.vercel.app/api?username=gemesquita&show_icons=true&count_private=true&bg_color=00000000&title_color=0b0b0b&text_color=6f6f6c&icon_color=0b0b0b&border_color=dcdcdc" width="49%" alt="GitHub stats" />
+    <source media="(prefers-color-scheme: dark)" srcset="assets/card-stats-dark.svg" />
+    <img src="assets/card-stats-light.svg" width="49%" alt="Commits, pull requests, issues, reviews and repos this year" />
   </picture>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://streak-stats.demolab.com?user=gemesquita&background=00000000&border=30363d&stroke=30363d&ring=e6edf3&fire=e6edf3&currStreakNum=e6edf3&sideNums=e6edf3&currStreakLabel=8b949e&sideLabels=8b949e&dates=8b949e" />
-    <img src="https://streak-stats.demolab.com?user=gemesquita&background=00000000&border=dcdcdc&stroke=dcdcdc&ring=0b0b0b&fire=0b0b0b&currStreakNum=0b0b0b&sideNums=0b0b0b&currStreakLabel=6f6f6c&sideLabels=6f6f6c&dates=6f6f6c" width="49%" alt="Contribution streak" />
+    <source media="(prefers-color-scheme: dark)" srcset="assets/card-streak-dark.svg" />
+    <img src="assets/card-streak-light.svg" width="49%" alt="Contributions and streaks" />
   </picture>
 </p>
 
