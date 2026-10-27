@@ -32,7 +32,7 @@ const base = new Uint8Array(COLS * ROWS);
 weeks.forEach((w, c) => w.contributionDays.forEach((d) => { base[c + d.weekday * COLS] = level(d.contributionCount); }));
 
 // ---------- path: chase the nearest pearl without crossing the body, then line up and leave right ----------
-const LEN = 16, SUB = 3;              // body segments; sub-steps per cell, for smooth motion
+const LEN = 16, SUB = 4;              // body segments; sub-steps per cell, for smooth motion
 const START_ROW = 3, XS = -1;         // the head starts one cell off the left edge
 const WRAP = COLS + 24;               // cells from the start position to where the dragon re-enters on the left
 const path = [[XS, START_ROW]], targets = [];
@@ -261,7 +261,7 @@ function gif(theme) {
     const rw = x1 - x0 + 1, rh = y1 - y0 + 1, sub = new Uint8Array(rw * rh);
     for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) sub[x + y * rw] = px[(x0 + x) + (y0 + y) * W];
     prev.set(px);
-    push(0x21, 0xf9, 4, 0x04, ...u16(3), 0, 0);   // ~30 fps, no pause: the wrap makes the loop point invisible
+    push(0x21, 0xf9, 4, 0x04, ...u16(4), 0, 0);   // 25 fps, four sub-steps per cell: a slow, even glide; no pause, the wrap hides the loop point
     push(0x2c, ...u16(x0), ...u16(y0), ...u16(rw), ...u16(rh), 0, 4);
     const data = lzw(sub, 4);
     for (let i = 0; i < data.length; i += 255) { const chunk = data.slice(i, i + 255); parts.push(Buffer.from([chunk.length, ...chunk])); }
