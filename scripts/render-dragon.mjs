@@ -110,14 +110,11 @@ const HALF = [
   ".....OO#OO#",
   "......OOOOO",
 ];
-// open mouth: the lower jaw drops four chunks, showing a dark cavity with bright fangs (T) top and bottom
+// open mouth: a small dark gap in the middle of the snout with two long vampire fangs (T) hanging from the upper jaw
 const HALF_OPEN = HALF.slice(0, 22).concat([
-  ".....OOOOOO",
-  ".....OTOOTO",
-  ".....OOOOOO",
-  ".....OOOOOO",
-  ".....OOTOOT",
-  ".....O#####",
+  ".....O=OOOO",
+  ".....O=OTOO",
+  ".....O=OTOO",
   "......OOOOO",
 ]);
 const mirror = (half) => half.map((l) => l + l.slice(0, 10).split("").reverse().map((ch) => (ch === "*" ? "=" : ch)).join(""));
