@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="830" height="252" viewBox="0 0 830 252" role="img" aria-label="592 contributions in 12 months, 86 commits in 2026, 3 repositories contributed to">
+<line x1="0" y1="1" x2="830" y2="1" stroke="#0b0b0b" stroke-width="1.5"/>
+<text x="18" y="92" font-family="'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif" font-size="68" font-weight="800" letter-spacing="-3" fill="#0b0b0b">592</text>
+<text x="20" y="118" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" letter-spacing="2.5" fill="#6f6f6c">CONTRIBUTIONS · 12 MONTHS</text>
+<line x1="276.6666666666667" y1="2" x2="276.6666666666667" y2="128" stroke="#dcdcdc"/>
+<text x="294.6666666666667" y="92" font-family="'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif" font-size="68" font-weight="800" letter-spacing="-3" fill="#0b0b0b">86</text>
+<text x="296.6666666666667" y="118" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" letter-spacing="2.5" fill="#6f6f6c">COMMITS · 2026</text>
+<line x1="553.3333333333334" y1="2" x2="553.3333333333334" y2="128" stroke="#dcdcdc"/>
+<text x="571.3333333333334" y="92" font-family="'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif" font-size="68" font-weight="800" letter-spacing="-3" fill="#0b0b0b">3</text>
+<text x="573.3333333333334" y="118" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" letter-spacing="2.5" fill="#6f6f6c">REPOS CONTRIBUTED TO</text>
+<text x="0" y="160" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#6f6f6c">TypeScript</text>
+<text x="830" y="160" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#6f6f6c">80%</text>
+<rect x="0" y="166" width="830" height="6" fill="#ececea"/>
+<rect x="0" y="166" width="664" height="6" fill="#0b0b0b"/>
+<text x="0" y="184" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#6f6f6c">Dart</text>
+<text x="830" y="184" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#6f6f6c">14%</text>
+<rect x="0" y="190" width="830" height="6" fill="#ececea"/>
+<rect x="0" y="190" width="116.2" height="6" fill="#0b0b0b"/>
+<text x="0" y="208" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#6f6f6c">JavaScript</text>
+<text x="830" y="208" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#6f6f6c">3%</text>
+<rect x="0" y="214" width="830" height="6" fill="#ececea"/>
+<rect x="0" y="214" width="24.9" height="6" fill="#0b0b0b"/>
+<text x="0" y="232" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#6f6f6c">Python</text>
+<text x="830" y="232" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#6f6f6c">1%</text>
+<rect x="0" y="238" width="830" height="6" fill="#ececea"/>
+<rect x="0" y="238" width="8.3" height="6" fill="#0b0b0b"/>
+</svg>
