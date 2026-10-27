@@ -65,7 +65,7 @@
 <br/>
 
 <p align="center">
-  <a href="https://linkedin.com/in/gonçalomesquita"><picture><source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/LinkedIn-21262d?style=flat-square" /><img src="https://img.shields.io/badge/LinkedIn-000000?style=flat-square" alt="LinkedIn" /></picture></a>
-  <a href="mailto:gemisquita@gmail.com"><picture><source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/Email-21262d?style=flat-square&logo=gmail&logoColor=white" /><img src="https://img.shields.io/badge/Email-000000?style=flat-square&logo=gmail&logoColor=white" alt="Email" /></picture></a>
-  <a href="https://instagram.com/gm.mesquitaa"><picture><source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/Instagram-21262d?style=flat-square&logo=instagram&logoColor=white" /><img src="https://img.shields.io/badge/Instagram-000000?style=flat-square&logo=instagram&logoColor=white" alt="Instagram" /></picture></a>
+  <a href="https://linkedin.com/in/gonçalomesquita"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/contact-linkedin-dark.svg" /><img src="assets/contact-linkedin-light.svg" width="96" alt="LinkedIn" /></picture></a>
+  <a href="mailto:gemisquita@gmail.com"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/contact-email-dark.svg" /><img src="assets/contact-email-light.svg" width="96" alt="Email" /></picture></a>
+  <a href="https://instagram.com/gm.mesquitaa"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/contact-instagram-dark.svg" /><img src="assets/contact-instagram-light.svg" width="96" alt="Instagram" /></picture></a>
 </p>
