@@ -93,7 +93,8 @@ const langs = Object.entries(weight).sort((a, b) => b[1] - a[1]).slice(0, 5).map
 
 // ---------- drawing ----------
 const fmt = (n) => n.toLocaleString("en-US");
-const date = (s) => (s ? new Date(s + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : "");
+// short form, e.g. "Oct 26 '25", so a date range fits inside a third of the streak card
+const date = (s) => { if (!s) return ""; const d = new Date(s + "T00:00:00Z"); return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })} '${String(d.getUTCFullYear()).slice(2)}`; };
 const SANS = "'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif";
 const MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 const THEMES = {
@@ -146,7 +147,7 @@ function streakCard({ fg, mute, line }) {
   const col = (cx, n, label, dates, big) => {
     let s = `<text x="${cx}" y="100" text-anchor="middle" font-family="${SANS}" font-size="${big ? 40 : 32}" font-weight="800" letter-spacing="-1.5" fill="${fg}">${fmt(n)}</text>\n`;
     s += `<text x="${cx}" y="142" text-anchor="middle" font-family="${MONO}" font-size="10" letter-spacing="1.5" fill="${mute}">${label}</text>\n`;
-    s += `<text x="${cx}" y="160" text-anchor="middle" font-family="${MONO}" font-size="9.5" fill="${mute}">${dates}</text>\n`;
+    s += `<text x="${cx}" y="160" text-anchor="middle" font-family="${MONO}" font-size="8.5" fill="${mute}">${dates}</text>\n`;
     return s;
   };
   let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${fmt(contributions)} contributions in the last year, current streak ${current.len} days, longest streak ${longest.len} days">\n`;
