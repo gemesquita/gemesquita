@@ -110,14 +110,26 @@ const HALF = [
   ".....OO#OO#",
   "......OOOOO",
 ];
-const HEAD = HALF.map((l) => l + l.slice(0, 10).split("").reverse().map((ch) => (ch === "*" ? "=" : ch)).join(""));
+// open mouth: the lower jaw drops four chunks, showing a dark cavity with bright fangs (T) top and bottom
+const HALF_OPEN = HALF.slice(0, 22).concat([
+  ".....OOOOOO",
+  ".....OTOOTO",
+  ".....OOOOOO",
+  ".....OOOOOO",
+  ".....OOTOOT",
+  ".....O#####",
+  "......OOOOO",
+]);
+const mirror = (half) => half.map((l) => l + l.slice(0, 10).split("").reverse().map((ch) => (ch === "*" ? "=" : ch)).join(""));
+const HEAD = mirror(HALF), HEAD_OPEN = mirror(HALF_OPEN);
 const ANCHOR = [10, 13];   // chunk that sits on the head cell's centre (between the eyes)
-function drawHead(cell, dir, blink) {
+function drawHead(cell, dir, blink, open) {
   const [cx, cy] = center(cell);
   const f = dir, p = [f[1], -f[0]];   // the snout leads: the sprite's chin points along the direction of travel, antlers trail
-  for (let r = 0; r < HEAD.length; r++) for (let c = 0; c < HEAD[r].length; c++) {
-    const ch = HEAD[r][c]; if (ch === ".") continue;
-    const idx = ch === "#" ? BODY : ch === "*" ? HI : ch === "=" ? SH : ch === "O" ? OUT : blink ? BODY : OUT;   // eyes close to plain fill under the brow line
+  const S = open ? HEAD_OPEN : HEAD;
+  for (let r = 0; r < S.length; r++) for (let c = 0; c < S[r].length; c++) {
+    const ch = S[r][c]; if (ch === ".") continue;
+    const idx = ch === "#" ? BODY : ch === "*" ? HI : ch === "=" ? SH : ch === "O" ? OUT : ch === "T" ? HI : blink ? (r === 13 ? BODY : OUT) : OUT;   // blinking: the eye closes to a lid line
     const u = c - ANCHOR[0], v = r - ANCHOR[1];   // u across the face, v towards the chin
     rect(cx + (u * p[0] + v * f[0]) * 2 - 1, cy + (u * p[1] + v * f[1]) * 2 - 1, 2, 2, idx);
   }
@@ -189,7 +201,11 @@ function frame(f) {
   for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) rect(PAD + c * CELL, PAD + r * CELL, BLOCK, BLOCK, 1 + (eatenNow[c + r * COLS] && c >= front ? 0 : base[c + r * COLS]));
   if (targets[step]) { const [tx, ty] = center(targets[step]); disc(tx, ty, 7, ACC); disc(tx, ty, 5, 0); disc(tx, ty, 3, BODY); }   // the pearl
   const blink = f > 5 && f % BLINK_EVERY < BLINK_FRAMES, head = posAt(t), dir = dirAt(t);
-  for (const shift of [0, -WRAP, WRAP]) { drawBody(t, shift); drawHead([head[0] + shift, head[1]], dir, blink); }   // drawn thrice so it wraps across the edges
+  // jaws open when a cell is within reach and stay open for a couple of frames after the bite
+  const tg = targets[step], near = tg ? Math.abs(tg[0] - head[0]) + Math.abs(tg[1] - head[1]) <= 1.3 : false;
+  const justAte = step > 0 && targets[step - 1] && path[step][0] === targets[step - 1][0] && path[step][1] === targets[step - 1][1] && t - step < 0.7;
+  const open = near || justAte;
+  for (const shift of [0, -WRAP, WRAP]) { drawBody(t, shift); drawHead([head[0] + shift, head[1]], dir, blink, open); }   // drawn thrice so it wraps across the edges
 }
 
 // ---------- GIF ----------
