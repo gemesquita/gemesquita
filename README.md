@@ -3,7 +3,10 @@
 </p>
 
 <p align="center">
-  <code>CS Honours @ VU Amsterdam &nbsp;·&nbsp; Amsterdam, NL &nbsp;·&nbsp; full stack &nbsp;·&nbsp; backend &nbsp;·&nbsp; LLM pipelines</code>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/tagline-dark.svg" />
+    <img src="assets/tagline-light.svg" width="100%" alt="Software Engineer, AI, Systems, Full Stack, Amsterdam" />
+  </picture>
 </p>
 
 <br/>

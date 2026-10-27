@@ -50,11 +50,12 @@ const FRAMES = path.length;
 const CELL = 18, GAP = 4, BLOCK = CELL - GAP, PAD = 16;
 const W = COLS * CELL + PAD * 2, H = ROWS * CELL + PAD * 2;
 const themes = {
-  dark: { bg: [13, 17, 23], dots: [[28, 33, 40], [59, 64, 72], [110, 118, 129], [163, 170, 179], [230, 237, 243]], body: [230, 237, 243], accent: [139, 148, 158] },
-  light: { bg: [255, 255, 255], dots: [[235, 237, 240], [201, 201, 201], [143, 143, 143], [87, 87, 87], [31, 31, 31]], body: [96, 96, 96], accent: [170, 170, 170] },
+  dark: { bg: [13, 17, 23], dots: [[28, 33, 40], [59, 64, 72], [110, 118, 129], [163, 170, 179], [230, 237, 243]], body: [222, 228, 235], accent: [139, 148, 158], hi: [255, 255, 255], sh: [150, 158, 168] },
+  light: { bg: [255, 255, 255], dots: [[235, 237, 240], [201, 201, 201], [143, 143, 143], [87, 87, 87], [31, 31, 31]], body: [104, 104, 104], accent: [170, 170, 170], hi: [150, 150, 150], sh: [52, 52, 52] },
 };
-// palette: 0 bg, 1..5 dot levels 0..4, 6 body, 7 accent
-const BODY = 6, ACC = 7;
+// palette (16 slots): 0 bg, 1..5 dot levels 0..4, 6 body, 7 accent, 8 highlight, 9 shadow
+const BODY = 6, ACC = 7, HI = 8, SH = 9;
+const BLINK_EVERY = 45, BLINK_FRAMES = 3;
 const px = new Uint8Array(W * H), prev = new Uint8Array(W * H);
 const put = (x, y, i) => { if (x >= 0 && y >= 0 && x < W && y < H) px[x + y * W] = i; };
 const rect = (x0, y0, w, h, i) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) put(x, y, i); };
@@ -62,31 +63,32 @@ const disc = (cx, cy, r, i) => { for (let y = -r; y <= r; y++) for (let x = -r; 
 const center = ([c, r]) => [PAD + c * CELL + BLOCK / 2, PAD + r * CELL + BLOCK / 2];
 
 // Head, facing right, in 2x2 chunks. # body, + accent (whiskers, beard), o eye, . empty
+// Head, facing right, in 2x2 chunks. Lit from above: * highlight, # body, = shadow, + whiskers, o eye
 const HEAD = [
-  "....#.......#.........",
-  "....##......##........",
-  "....###....###........",
-  ".....###..###.........",
-  "......########........",
-  "....############......",
-  "...##############.....",
-  "..####oo###########...",
+  "....*.......*.........",
+  "....**......**........",
+  "....*#*....*#*........",
+  ".....*#*..*#*.........",
+  "......*######*........",
+  "....**#########*......",
+  "...*##############*...",
+  "..*###oo###########...",
   "..####oo############..",
-  ".####################+",
-  ".###################.+",
-  "..#################...",
-  "...#####..#########+..",
-  "...####....########...",
-  "....##......######+...",
-  ".....+........###.....",
+  ".###################*+",
+  ".#################==.+",
+  "..######===========...",
+  "...=====..=========+..",
+  "...====....========...",
+  "....==......======+...",
+  ".....+........===.....",
 ];
 const ANCHOR = [7, 8];   // chunk that sits on the head cell's centre (the eye), so the open jaws reach the pearl ahead
-function drawHead(cell, dir) {
+function drawHead(cell, dir, blink) {
   const [cx, cy] = center(cell);
   const [fx, fy] = dir;
   for (let r = 0; r < HEAD.length; r++) for (let c = 0; c < HEAD[r].length; c++) {
     const ch = HEAD[r][c]; if (ch === ".") continue;
-    const idx = ch === "#" ? BODY : ch === "+" ? ACC : 0;
+    const idx = ch === "#" ? BODY : ch === "+" ? ACC : ch === "*" ? HI : ch === "=" ? SH : blink ? (r === 7 ? BODY : SH) : 0;   // eye: open = bg pupil, blinking = closed line
     const u = c - ANCHOR[0], v = r - ANCHOR[1];
     // facing right: as drawn; left: mirrored; up/down: rotated, horns staying on the outside of the turn
     const [uu, vv] = fx === -1 ? [-u, v] : [u * fx - v * fy, u * fy + v * fx];
@@ -107,6 +109,8 @@ function drawBody(f) {
     const perp = [-d[1], d[0]];
     const taper = k >= LEN - 2 ? (k === LEN - 1 ? 6 : 10) : BLOCK;
     rect(Math.round(cx - taper / 2), Math.round(cy - taper / 2), taper, taper, BODY);
+    rect(Math.round(cx - taper / 2), Math.round(cy - taper / 2), taper, 2, HI);                 // lit top edge
+    rect(Math.round(cx - taper / 2), Math.round(cy + taper / 2) - 3, taper, 3, SH);             // shaded underside
     if (taper === BLOCK) {
       // belly stripe along the direction of travel
       rect(Math.round(cx - BLOCK / 2 + (d[0] ? 0 : 5)), Math.round(cy - BLOCK / 2 + (d[1] ? 0 : 5)), d[0] ? BLOCK : 4, d[1] ? BLOCK : 4, ACC);
@@ -130,7 +134,7 @@ function frame(f) {
   if (targets[f]) { const [tx, ty] = center(targets[f]); disc(tx, ty, 7, ACC); disc(tx, ty, 5, 0); disc(tx, ty, 3, BODY); }   // the pearl
   drawBody(f);
   const prevH = path[f - 1] || [path[f][0] - 1, path[f][1]];
-  drawHead(path[f], [path[f][0] - prevH[0], path[f][1] - prevH[1]]);
+  drawHead(path[f], [path[f][0] - prevH[0], path[f][1] - prevH[1]], f > 5 && f % BLINK_EVERY < BLINK_FRAMES);
 }
 
 // ---------- GIF ----------
@@ -159,8 +163,8 @@ function gif(theme) {
   const push = (...b) => parts.push(Buffer.from(b));
   const dbg = process.env.DEBUG_FRAME ? { w: 200, h: 100, s: 4 } : null;   // magnified crop around the head
   push(...Buffer.from("GIF89a"));
-  push(...u16(dbg ? dbg.w * dbg.s : W), ...u16(dbg ? dbg.h * dbg.s : H), 0xf2, 0, 0);
-  push(...theme.bg, ...theme.dots.flat(), ...theme.body, ...theme.accent);
+  push(...u16(dbg ? dbg.w * dbg.s : W), ...u16(dbg ? dbg.h * dbg.s : H), 0xf3, 0, 0);   // 16-colour global table
+  push(...theme.bg, ...theme.dots.flat(), ...theme.body, ...theme.accent, ...theme.hi, ...theme.sh, ...new Array(6 * 3).fill(0));
   push(0x21, 0xff, 0x0b, ...Buffer.from("NETSCAPE2.0"), 3, 1, 0, 0, 0);
   prev.fill(255);
   const only = process.env.DEBUG_FRAME ? [Number(process.env.DEBUG_FRAME)] : null;   // DEBUG_FRAME=n writes a single still frame
@@ -172,8 +176,8 @@ function gif(theme) {
       const rw = dbg.w * dbg.s, rh = dbg.h * dbg.s, sub = new Uint8Array(rw * rh);
       for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) sub[x + y * rw] = px[(ox + Math.floor(x / dbg.s)) + (oy + Math.floor(y / dbg.s)) * W];
       push(0x21, 0xf9, 4, 0x04, ...u16(100), 0, 0);
-      push(0x2c, ...u16(0), ...u16(0), ...u16(rw), ...u16(rh), 0, 3);
-      const data = lzw(sub, 3);
+      push(0x2c, ...u16(0), ...u16(0), ...u16(rw), ...u16(rh), 0, 4);
+      const data = lzw(sub, 4);
       for (let i = 0; i < data.length; i += 255) { const chunk = data.slice(i, i + 255); parts.push(Buffer.from([chunk.length, ...chunk])); }
       push(0);
       continue;
@@ -185,8 +189,8 @@ function gif(theme) {
     for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) sub[x + y * rw] = px[(x0 + x) + (y0 + y) * W];
     prev.set(px);
     push(0x21, 0xf9, 4, 0x04, ...u16(f === FRAMES - 1 ? 120 : 6), 0, 0);
-    push(0x2c, ...u16(x0), ...u16(y0), ...u16(rw), ...u16(rh), 0, 3);
-    const data = lzw(sub, 3);
+    push(0x2c, ...u16(x0), ...u16(y0), ...u16(rw), ...u16(rh), 0, 4);
+    const data = lzw(sub, 4);
     for (let i = 0; i < data.length; i += 255) { const chunk = data.slice(i, i + 255); parts.push(Buffer.from([chunk.length, ...chunk])); }
     push(0);
   }
