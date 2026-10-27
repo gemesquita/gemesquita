@@ -169,11 +169,16 @@ function trim(t, shift, idx, grow) {
     const p = posAt(t - k), d = dirAt(t - k), perp = [-d[1], d[0]];
     const [cx, cy] = center([p[0] + shift, p[1]]);
     if (widthAt(k) === TUBE) {
-      if (k % 2 === 0) for (const s of [1, -1]) { prect(cx, cy, perp, s, TUBE / 2 - 1, 3 + grow, 6 + 2 * grow, idx); prect(cx, cy, perp, s, TUBE / 2 + 2, 2 + grow, 2 + 2 * grow, idx); }
+      // fur: two hairs per cell on each side, flowing with the body
+      for (const o of [-4, 4]) for (const s of [1, -1]) {
+        const bx = cx + d[0] * o, by = cy + d[1] * o;
+        prect(bx, by, perp, s, TUBE / 2 - 1, (o < 0 ? 4 : 3) + grow, 4 + 2 * grow, idx);   // alternate long and short hairs
+        if (o < 0) prect(bx, by, perp, s, TUBE / 2 + 3, 2 + grow, 2 + 2 * grow, idx);
+      }
       if (k % 5 === 2) for (const s of [1, -1]) {
-        prect(cx, cy, perp, s, TUBE / 2 - 1, 6 + grow, 2 + 2 * grow, idx);
-        const lx = cx + perp[0] * s * (TUBE / 2 + 5), ly = cy + perp[1] * s * (TUBE / 2 + 5);
-        stroke([lx, ly], [lx - d[0] * 4, ly - d[1] * 4], 2 + 2 * grow, idx);
+        prect(cx, cy, perp, s, TUBE / 2 - 1, 8 + grow, 3 + 2 * grow, idx);
+        const lx = cx + perp[0] * s * (TUBE / 2 + 7), ly = cy + perp[1] * s * (TUBE / 2 + 7);
+        stroke([lx, ly], [lx - d[0] * 5, ly - d[1] * 5], 3 + 2 * grow, idx);
       }
     }
     if (k === LEN - 1) { stroke([cx - d[0] * 6, cy - d[1] * 6], [cx - d[0] * 10, cy - d[1] * 10], 3 + 2 * grow, idx); }   // tail flame
