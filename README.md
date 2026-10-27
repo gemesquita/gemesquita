@@ -54,8 +54,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/snake-dark.gif" />
-    <img src="assets/snake-light.gif" width="100%" alt="Contribution graph being eaten by a snake" />
+    <source media="(prefers-color-scheme: dark)" srcset="assets/dragon-dark.gif" />
+    <img src="assets/dragon-light.gif" width="100%" alt="A pixel dragon chasing a pearl through the contribution graph" />
   </picture>
 </p>
 
