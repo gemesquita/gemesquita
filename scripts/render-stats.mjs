@@ -16,10 +16,14 @@ if (!TOKEN) { console.error("Set GITHUB_TOKEN (or GH_PAT)."); process.exit(1); }
 const year = new Date().getUTCFullYear();
 const query = `query($login: String!, $from: DateTime!) {
   user(login: $login) {
-    repositories(first: 100, ownerAffiliations: OWNER, isFork: false) {
-      nodes { stargazerCount languages(first: 10, orderBy: { field: SIZE, direction: DESC }) { edges { size node { name } } } }
+    all: contributionsCollection {
+      totalRepositoriesWithContributedCommits
+      contributionCalendar { totalContributions }
+      commitContributionsByRepository(maxRepositories: 100) {
+        contributions { totalCount }
+        repository { languages(first: 10, orderBy: { field: SIZE, direction: DESC }) { edges { size node { name } } } }
+      }
     }
-    all: contributionsCollection { totalRepositoriesWithContributedCommits contributionCalendar { totalContributions weeks { contributionDays { date contributionCount } } } }
     year: contributionsCollection(from: $from) { totalCommitContributions }
   }
 }`;
@@ -39,10 +43,18 @@ const repos = u.all.totalRepositoriesWithContributedCommits;
 
 // generated or markup languages that would crowd out the real ones
 const SKIP = new Set(["PLpgSQL", "HTML", "CSS", "SCSS", "Makefile", "Dockerfile", "Jupyter Notebook", "Shell"]);
-const bytes = {};
-for (const r of u.repositories.nodes) for (const e of r.languages.edges) if (!SKIP.has(e.node.name)) bytes[e.node.name] = (bytes[e.node.name] || 0) + e.size;
-const total = Object.values(bytes).reduce((a, b) => a + b, 0) || 1;
-const langs = Object.entries(bytes).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([name, n]) => [name, Math.round((n / total) * 100)]);
+// Languages of the repos you committed to in the last year (own, org and
+// collaborator repos alike), each repo's language mix weighted by how many
+// commits you made there, so one large monorepo cannot swamp the rest.
+const weight = {};
+for (const c of u.all.commitContributionsByRepository) {
+  const edges = c.repository.languages.edges.filter((e) => !SKIP.has(e.node.name));
+  const repoTotal = edges.reduce((s, e) => s + e.size, 0);
+  if (!repoTotal) continue;
+  for (const e of edges) weight[e.node.name] = (weight[e.node.name] || 0) + (e.size / repoTotal) * c.contributions.totalCount;
+}
+const total = Object.values(weight).reduce((a, b) => a + b, 0) || 1;
+const langs = Object.entries(weight).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([name, n]) => [name, Math.round((n / total) * 100)]);
 
 const fmt = (n) => n.toLocaleString("en-US");
 function svg({ fg, mute, line, bar }) {
