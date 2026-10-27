@@ -114,11 +114,11 @@ const HEAD = HALF.map((l) => l + l.slice(0, 10).split("").reverse().map((ch) => 
 const ANCHOR = [10, 13];   // chunk that sits on the head cell's centre (between the eyes)
 function drawHead(cell, dir, blink) {
   const [cx, cy] = center(cell);
-  const f = dir, p = [-f[1], f[0]];   // the sprite's antlers point along the direction of travel; p is its right-hand side
+  const f = dir, p = [f[1], -f[0]];   // the snout leads: the sprite's chin points along the direction of travel, antlers trail
   for (let r = 0; r < HEAD.length; r++) for (let c = 0; c < HEAD[r].length; c++) {
     const ch = HEAD[r][c]; if (ch === ".") continue;
     const idx = ch === "#" ? BODY : ch === "*" ? HI : ch === "=" ? SH : ch === "O" ? OUT : blink ? BODY : OUT;   // eyes close to plain fill under the brow line
-    const u = c - ANCHOR[0], v = ANCHOR[1] - r;   // u across the face, v towards the antlers
+    const u = c - ANCHOR[0], v = r - ANCHOR[1];   // u across the face, v towards the chin
     rect(cx + (u * p[0] + v * f[0]) * 2 - 1, cy + (u * p[1] + v * f[1]) * 2 - 1, 2, 2, idx);
   }
 }
