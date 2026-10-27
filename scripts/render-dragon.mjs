@@ -114,10 +114,12 @@ const HEAD = HALF.map((l) => l + l.slice(0, 10).split("").reverse().map((ch) => 
 const ANCHOR = [10, 13];   // chunk that sits on the head cell's centre (between the eyes)
 function drawHead(cell, dir, blink) {
   const [cx, cy] = center(cell);
+  const f = dir, p = [-f[1], f[0]];   // the sprite's antlers point along the direction of travel; p is its right-hand side
   for (let r = 0; r < HEAD.length; r++) for (let c = 0; c < HEAD[r].length; c++) {
     const ch = HEAD[r][c]; if (ch === ".") continue;
     const idx = ch === "#" ? BODY : ch === "*" ? HI : ch === "=" ? SH : ch === "O" ? OUT : blink ? BODY : OUT;   // eyes close to plain fill under the brow line
-    rect(cx + (c - ANCHOR[0]) * 2 - 1, cy + (r - ANCHOR[1]) * 2 - 1, 2, 2, idx);
+    const u = c - ANCHOR[0], v = ANCHOR[1] - r;   // u across the face, v towards the antlers
+    rect(cx + (u * p[0] + v * f[0]) * 2 - 1, cy + (u * p[1] + v * f[1]) * 2 - 1, 2, 2, idx);
   }
 }
 // a rectangle placed along the perpendicular axis p, `dist` px out from a segment centre, `thick` along p and `width` across it
@@ -125,29 +127,55 @@ function prect(cx, cy, p, s, dist, thick, width, idx) {
   if (p[0]) rect(Math.round(cx + p[0] * s * dist - (s * p[0] > 0 ? 0 : thick)), Math.round(cy - width / 2), thick, width, idx);
   else rect(Math.round(cx - width / 2), Math.round(cy + p[1] * s * dist - (s * p[1] > 0 ? 0 : thick)), width, thick, idx);
 }
-function drawBody(t, shift) {
+const TUBE = BLOCK - 2;   // the body is slightly slimmer than a cell so neighbouring runs keep a gap between their outlines
+// an axis-aligned thick line between two pixel points, square caps
+function stroke(a, b, w, idx) {
+  rect(Math.round(Math.min(a[0], b[0]) - w / 2), Math.round(Math.min(a[1], b[1]) - w / 2), Math.round(Math.abs(b[0] - a[0]) + w), Math.round(Math.abs(b[1] - a[1]) + w), idx);
+}
+// the body between path parameters ta and tb, following every corner of the path
+function tube(ta, tb, shift, w, idx, edges) {
+  let a = center([posAt(ta)[0] + shift, posAt(ta)[1]]);
+  const pts = [];
+  for (let i = Math.ceil(ta); i < tb; i++) if (i > 0 && i <= STEPS) pts.push(center([path[i][0] + shift, path[i][1]]));
+  pts.push(center([posAt(tb)[0] + shift, posAt(tb)[1]]));
+  for (const b of pts) {
+    if (!edges) stroke(a, b, w, idx);
+    else if (a[1] === b[1]) {   // horizontal run: lit on top, shaded underneath
+      rect(Math.round(Math.min(a[0], b[0]) - w / 2), Math.round(a[1] - w / 2), Math.round(Math.abs(b[0] - a[0]) + w), 2, HI);
+      rect(Math.round(Math.min(a[0], b[0]) - w / 2), Math.round(a[1] + w / 2) - 3, Math.round(Math.abs(b[0] - a[0]) + w), 3, SH);
+    } else {                    // vertical run: lit on the left, shaded on the right
+      rect(Math.round(a[0] - w / 2), Math.round(Math.min(a[1], b[1]) - w / 2), 2, Math.round(Math.abs(b[1] - a[1]) + w), HI);
+      rect(Math.round(a[0] + w / 2) - 3, Math.round(Math.min(a[1], b[1]) - w / 2), 3, Math.round(Math.abs(b[1] - a[1]) + w), SH);
+    }
+    a = b;
+  }
+}
+const widthAt = (k) => (k >= LEN - 2 ? (k === LEN - 1 ? 6 : 10) : TUBE);
+// spikes, legs and the tail flame, drawn in `idx` grown by `grow` px so the same calls give the outline and the fill
+function trim(t, shift, idx, grow) {
   for (let k = LEN - 1; k >= 1; k--) {
-    const p = posAt(t - k), d = dirAt(t - k);
+    const p = posAt(t - k), d = dirAt(t - k), perp = [-d[1], d[0]];
     const [cx, cy] = center([p[0] + shift, p[1]]);
-    const perp = [-d[1], d[0]], i = k;   // spikes and legs belong to body segments, so they travel with the dragon
-    const taper = k >= LEN - 2 ? (k === LEN - 1 ? 6 : 10) : BLOCK;
-    rect(Math.round(cx - taper / 2), Math.round(cy - taper / 2), taper, taper, BODY);
-    rect(Math.round(cx - taper / 2), Math.round(cy - taper / 2), taper, 2, HI);                 // lit top edge
-    rect(Math.round(cx - taper / 2), Math.round(cy + taper / 2) - 3, taper, 3, SH);             // shaded underside
-    if (taper === BLOCK) {
-      // belly stripe along the direction of travel
-      rect(Math.round(cx - BLOCK / 2 + (d[0] ? 0 : 5)), Math.round(cy - BLOCK / 2 + (d[1] ? 0 : 5)), d[0] ? BLOCK : 4, d[1] ? BLOCK : 4, ACC);
-      // dorsal spikes on alternate segments: a 4px-wide base and a 2px tip reaching across the gap
-      if (i % 2 === 0) for (const s of [1, -1]) { prect(cx, cy, perp, s, BLOCK / 2, 2, 6, BODY); prect(cx, cy, perp, s, BLOCK / 2 + 2, 2, 2, BODY); }
-      // legs every fifth segment: a short limb out to the side with a foot pointing backwards
-      if (i % 5 === 2) for (const s of [1, -1]) {
-        prect(cx, cy, perp, s, BLOCK / 2, 5, 2, BODY);
-        const fx = cx + perp[0] * s * (BLOCK / 2 + 5) - d[0] * 4, fy = cy + perp[1] * s * (BLOCK / 2 + 5) - d[1] * 4;
-        rect(Math.round(Math.min(fx, cx + perp[0] * s * (BLOCK / 2 + 5)) - (d[0] ? 0 : 1)), Math.round(Math.min(fy, cy + perp[1] * s * (BLOCK / 2 + 5)) - (d[1] ? 0 : 1)), d[0] ? 5 : 2, d[1] ? 5 : 2, BODY);
+    if (widthAt(k) === TUBE) {
+      if (k % 2 === 0) for (const s of [1, -1]) { prect(cx, cy, perp, s, TUBE / 2 - 1, 3 + grow, 6 + 2 * grow, idx); prect(cx, cy, perp, s, TUBE / 2 + 2, 2 + grow, 2 + 2 * grow, idx); }
+      if (k % 5 === 2) for (const s of [1, -1]) {
+        prect(cx, cy, perp, s, TUBE / 2 - 1, 6 + grow, 2 + 2 * grow, idx);
+        const lx = cx + perp[0] * s * (TUBE / 2 + 5), ly = cy + perp[1] * s * (TUBE / 2 + 5);
+        stroke([lx, ly], [lx - d[0] * 4, ly - d[1] * 4], 2 + 2 * grow, idx);
       }
     }
-    if (k === LEN - 1) { rect(Math.round(cx - d[0] * 7 - 1), Math.round(cy - d[1] * 7 - 1), 3, 3, ACC); rect(Math.round(cx - d[0] * 10 - 1), Math.round(cy - d[1] * 10 - 1), 2, 2, ACC); }   // tail flame
+    if (k === LEN - 1) { stroke([cx - d[0] * 6, cy - d[1] * 6], [cx - d[0] * 10, cy - d[1] * 10], 3 + 2 * grow, idx); }   // tail flame
   }
+}
+function drawBody(t, shift) {
+  // outline pass: everything 2px fatter in the outline colour, then the fills on top, so only the silhouette keeps the line
+  trim(t, shift, OUT, 2);
+  for (let k = LEN - 1; k >= 1; k--) tube(t - k, t - k + 1, shift, widthAt(k) + 4, OUT);
+  trim(t, shift, BODY, 0);
+  for (let k = LEN - 1; k >= 1; k--) tube(t - k, t - k + 1, shift, widthAt(k), BODY);
+  for (let k = LEN - 1; k >= 1; k--) if (widthAt(k) === TUBE) tube(t - k, t - k + 1, shift, TUBE, BODY, true);
+  tube(t - (LEN - 3), t - 1, shift, 4, ACC);   // belly line along the whole body
+  trim(t, shift, ACC, -1);                     // claws and flame tips in the accent grey
 }
 function frame(f) {
   px.fill(0);
