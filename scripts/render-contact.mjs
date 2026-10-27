@@ -30,9 +30,8 @@ const SANS = "'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif";
 const MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 function svg(link, path, { fg, mute, line }) {
   let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${link.label}">\n`;
-  s += `<rect x="${X + 0.5}" y="0.5" width="${TILE - 1}" height="${TILE - 1}" fill="none" stroke="${line}"/>\n`;
-  if (path) s += `<path transform="translate(${X + 18} 18) scale(${(28 / 24).toFixed(3)})" d="${path}" fill="${fg}"/>\n`;
-  else s += `<text x="${W / 2}" y="44" text-anchor="middle" font-family="${SANS}" font-size="30" font-weight="800" letter-spacing="-1.5" fill="${fg}">in</text>\n`;
+  if (path) s += `<path transform="translate(${X + 14} 14) scale(${(36 / 24).toFixed(3)})" d="${path}" fill="${fg}"/>\n`;
+  else s += `<text x="${W / 2}" y="46" text-anchor="middle" font-family="${SANS}" font-size="38" font-weight="800" letter-spacing="-2" fill="${fg}">in</text>\n`;
   s += `<text x="${W / 2}" y="92" text-anchor="middle" font-family="${MONO}" font-size="9.5" letter-spacing="2" fill="${mute}">${link.label.toUpperCase()}</text>\n`;
   return s + `</svg>\n`;
 }

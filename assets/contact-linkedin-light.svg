@@ -1,5 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="96" height="110" viewBox="0 0 96 110" role="img" aria-label="LinkedIn">
-<rect x="16.5" y="0.5" width="63" height="63" fill="none" stroke="#dcdcdc"/>
-<text x="48" y="44" text-anchor="middle" font-family="'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif" font-size="30" font-weight="800" letter-spacing="-1.5" fill="#0b0b0b">in</text>
+<text x="48" y="46" text-anchor="middle" font-family="'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif" font-size="38" font-weight="800" letter-spacing="-2" fill="#0b0b0b">in</text>
 <text x="48" y="92" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" letter-spacing="2" fill="#6f6f6c">LINKEDIN</text>
 </svg>
