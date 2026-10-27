@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Renders assets/dragon-dark.gif and assets/dragon-light.gif: a pixel-art
 // Chinese dragon chasing a pearl through your contribution calendar, eating
-// the cells as it goes. Zero dependencies; only changed pixels are written per
-// frame so the file stays small.
+// the cells as it goes, then sliding out the right edge and back in on the
+// left while the grid refills. Zero dependencies; only changed pixels are
+// written per frame so the file stays small.
 //
 //   GH_PAT=... node scripts/render-dragon.mjs
 
@@ -30,21 +31,38 @@ const level = (n) => (n === 0 ? 0 : n <= q(0.25) ? 1 : n <= q(0.5) ? 2 : n <= q(
 const base = new Uint8Array(COLS * ROWS);
 weeks.forEach((w, c) => w.contributionDays.forEach((d) => { base[c + d.weekday * COLS] = level(d.contributionCount); }));
 
-// ---------- path: chase the nearest pearl, then leave to the right ----------
-const LEN = 16;
-const path = [], targets = [];
-let head = [-3, 3];
+// ---------- path: chase the nearest pearl without crossing the body, then line up and leave right ----------
+const LEN = 16, SUB = 3;              // body segments; sub-steps per cell, for smooth motion
+const START_ROW = 3, XS = -1;         // the head starts one cell off the left edge
+const WRAP = COLS + 24;               // cells from the start position to where the dragon re-enters on the left
+const path = [[XS, START_ROW]], targets = [];
 const eaten = new Uint8Array(COLS * ROWS);
-const nearest = () => { let best = null, bd = 1e9; for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) { const i = c + r * COLS; if (base[i] && !eaten[i]) { const d = Math.abs(c - head[0]) + Math.abs(r - head[1]) * 1.4; if (d < bd) { bd = d; best = [c, r]; } } } return best; };
-let target = nearest();
-while (target) {
-  const dx = target[0] - head[0], dy = target[1] - head[1];
-  head = Math.abs(dx) >= Math.abs(dy) && dx !== 0 ? [head[0] + Math.sign(dx), head[1]] : [head[0], head[1] + Math.sign(dy)];
-  path.push(head); targets.push(target);
-  if (head[0] === target[0] && head[1] === target[1]) { eaten[head[0] + head[1] * COLS] = 1; target = nearest(); }
+const headAt = () => path[path.length - 1];
+const occupied = (c, r) => { for (let i = Math.max(0, path.length - LEN); i < path.length; i++) if (path[i][0] === c && path[i][1] === r) return true; return false; };
+function stepToward(tx, ty) {
+  const [hx, hy] = headAt(); const dx = tx - hx, dy = ty - hy;
+  const cands = [];
+  if (dx) cands.push([hx + Math.sign(dx), hy]);   // across first, then along the column
+  if (dy) cands.push([hx, hy + Math.sign(dy)]);
+  cands.push([hx, hy + 1], [hx, hy - 1], [hx + 1, hy], [hx - 1, hy]);   // sidesteps when the body is in the way
+  path.push(cands.find(([c, r]) => r >= 0 && r < ROWS && !occupied(c, r)) || cands[0]);
+  const [nx, ny] = headAt(), i = nx + ny * COLS;
+  if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && base[i]) eaten[i] = 1;   // anything crossed is eaten
 }
-for (let i = 0; i < LEN + 3; i++) { head = [head[0] + 1, head[1]]; path.push(head); targets.push(null); }
-const FRAMES = path.length;
+// serpentine sweep: column by column, each column's cells taken from the end nearest the head, so the body never coils
+for (let c = 0; c < COLS; c++) {
+  const rows = []; for (let r = 0; r < ROWS; r++) if (base[c + r * COLS]) rows.push(r);
+  if (!rows.length) continue;
+  if (Math.abs(rows[0] - headAt()[1]) > Math.abs(rows[rows.length - 1] - headAt()[1])) rows.reverse();
+  for (const r of rows) while (!eaten[c + r * COLS] && path.length < 20000) { stepToward(c, r); targets.push([c, r]); }
+}
+// line up with the start row while heading right, slide out, and carry on to the re-entry point
+while (headAt()[1] !== START_ROW || headAt()[0] < COLS) { const [hx, hy] = headAt(); path.push(hy === START_ROW || path.length % 2 ? [hx + 1, hy] : [hx, hy + Math.sign(START_ROW - hy)]); targets.push(null); }
+while (headAt()[0] < XS + WRAP) { path.push([headAt()[0] + 1, START_ROW]); targets.push(null); }
+const STEPS = path.length - 1;        // step i runs path[i] -> path[i+1]; frame f sits at t = f / SUB
+const FRAMES = STEPS * SUB;           // frame FRAMES would equal frame 0 shifted by WRAP, so the loop is seamless
+const posAt = (t) => { if (t <= 0) return [XS + t, START_ROW]; const i = Math.min(STEPS - 1, Math.floor(t)), fr = t - i, a = path[i], b = path[i + 1]; return [a[0] + (b[0] - a[0]) * fr, a[1] + (b[1] - a[1]) * fr]; };
+const dirAt = (t) => { if (t < 0) return [1, 0]; const i = Math.min(STEPS - 1, Math.floor(t)), a = path[i], b = path[i + 1]; const d = [b[0] - a[0], b[1] - a[1]]; return d[0] || d[1] ? d : [1, 0]; };
 
 // ---------- pixels ----------
 const CELL = 18, GAP = 4, BLOCK = CELL - GAP, PAD = 16;
@@ -55,14 +73,13 @@ const themes = {
 };
 // palette (16 slots): 0 bg, 1..5 dot levels 0..4, 6 body, 7 accent, 8 highlight, 9 shadow
 const BODY = 6, ACC = 7, HI = 8, SH = 9;
-const BLINK_EVERY = 45, BLINK_FRAMES = 3;
+const BLINK_EVERY = 45 * SUB, BLINK_FRAMES = 3 * SUB;
 const px = new Uint8Array(W * H), prev = new Uint8Array(W * H);
 const put = (x, y, i) => { if (x >= 0 && y >= 0 && x < W && y < H) px[x + y * W] = i; };
 const rect = (x0, y0, w, h, i) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) put(x, y, i); };
 const disc = (cx, cy, r, i) => { for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r) put(cx + x, cy + y, i); };
-const center = ([c, r]) => [PAD + c * CELL + BLOCK / 2, PAD + r * CELL + BLOCK / 2];
+const center = ([c, r]) => [Math.round(PAD + c * CELL + BLOCK / 2), Math.round(PAD + r * CELL + BLOCK / 2)];   // cell coords may be fractional
 
-// Head, facing right, in 2x2 chunks. # body, + accent (whiskers, beard), o eye, . empty
 // Head, facing right, in 2x2 chunks. Lit from above: * highlight, # body, = shadow, + whiskers, o eye
 const HEAD = [
   "....*.......*.........",
@@ -100,13 +117,11 @@ function prect(cx, cy, p, s, dist, thick, width, idx) {
   if (p[0]) rect(Math.round(cx + p[0] * s * dist - (s * p[0] > 0 ? 0 : thick)), Math.round(cy - width / 2), thick, width, idx);
   else rect(Math.round(cx - width / 2), Math.round(cy + p[1] * s * dist - (s * p[1] > 0 ? 0 : thick)), width, thick, idx);
 }
-function drawBody(f) {
+function drawBody(t, shift) {
   for (let k = LEN - 1; k >= 1; k--) {
-    const i = f - k; if (i < 0) continue;
-    const [cx, cy] = center(path[i]);
-    const prevP = path[i - 1] || [path[i][0] - 1, path[i][1]];
-    const d = [path[i][0] - prevP[0], path[i][1] - prevP[1]];
-    const perp = [-d[1], d[0]];
+    const p = posAt(t - k), d = dirAt(t - k);
+    const [cx, cy] = center([p[0] + shift, p[1]]);
+    const perp = [-d[1], d[0]], i = k;   // spikes and legs belong to body segments, so they travel with the dragon
     const taper = k >= LEN - 2 ? (k === LEN - 1 ? 6 : 10) : BLOCK;
     rect(Math.round(cx - taper / 2), Math.round(cy - taper / 2), taper, taper, BODY);
     rect(Math.round(cx - taper / 2), Math.round(cy - taper / 2), taper, 2, HI);                 // lit top edge
@@ -128,13 +143,17 @@ function drawBody(f) {
 }
 function frame(f) {
   px.fill(0);
+  const t = f / SUB, step = Math.floor(t), hx = posAt(t)[0];
+  // cells the head has reached so far
   const eatenNow = new Uint8Array(COLS * ROWS);
-  for (let i = 0; i <= f; i++) { const [c, r] = path[i]; if (c >= 0 && c < COLS && r >= 0 && r < ROWS) eatenNow[c + r * COLS] = 1; }
-  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) rect(PAD + c * CELL, PAD + r * CELL, BLOCK, BLOCK, 1 + (eatenNow[c + r * COLS] ? 0 : base[c + r * COLS]));
-  if (targets[f]) { const [tx, ty] = center(targets[f]); disc(tx, ty, 7, ACC); disc(tx, ty, 5, 0); disc(tx, ty, 3, BODY); }   // the pearl
-  drawBody(f);
-  const prevH = path[f - 1] || [path[f][0] - 1, path[f][1]];
-  drawHead(path[f], [path[f][0] - prevH[0], path[f][1] - prevH[1]], f > 5 && f % BLINK_EVERY < BLINK_FRAMES);
+  for (let i = 0; i <= step; i++) { const [c, r] = path[i]; if (c >= 0 && c < COLS && r >= 0 && r < ROWS) eatenNow[c + r * COLS] = 1; }
+  // once the tail has left the right edge, the grid wipes back in from the left before the head re-enters
+  const wipeStart = COLS + LEN - 1, wipeEnd = XS + WRAP - 1;
+  const front = hx >= wipeEnd ? COLS : hx >= wipeStart ? Math.floor(((hx - wipeStart) / (wipeEnd - wipeStart)) * COLS) : 0;
+  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) rect(PAD + c * CELL, PAD + r * CELL, BLOCK, BLOCK, 1 + (eatenNow[c + r * COLS] && c >= front ? 0 : base[c + r * COLS]));
+  if (targets[step]) { const [tx, ty] = center(targets[step]); disc(tx, ty, 7, ACC); disc(tx, ty, 5, 0); disc(tx, ty, 3, BODY); }   // the pearl
+  const blink = f > 5 && f % BLINK_EVERY < BLINK_FRAMES, head = posAt(t), dir = dirAt(t);
+  for (const shift of [0, -WRAP, WRAP]) { drawBody(t, shift); drawHead([head[0] + shift, head[1]], dir, blink); }   // drawn thrice so it wraps across the edges
 }
 
 // ---------- GIF ----------
@@ -161,7 +180,7 @@ const u16 = (v) => [v & 255, (v >> 8) & 255];
 function gif(theme) {
   const parts = [];
   const push = (...b) => parts.push(Buffer.from(b));
-  const dbg = process.env.DEBUG_FRAME ? { w: 200, h: 100, s: 4 } : null;   // magnified crop around the head
+  const dbg = process.env.DEBUG_FRAME ? (process.env.DEBUG_FULL ? { w: W, h: H, s: 1 } : { w: 200, h: 100, s: 4 }) : null;   // DEBUG_FRAME=n: a still; DEBUG_FULL=1: whole grid instead of a magnified crop around the head
   push(...Buffer.from("GIF89a"));
   push(...u16(dbg ? dbg.w * dbg.s : W), ...u16(dbg ? dbg.h * dbg.s : H), 0xf3, 0, 0);   // 16-colour global table
   push(...theme.bg, ...theme.dots.flat(), ...theme.body, ...theme.accent, ...theme.hi, ...theme.sh, ...new Array(6 * 3).fill(0));
@@ -171,7 +190,7 @@ function gif(theme) {
   for (const f of only || Array.from({ length: FRAMES }, (_, i) => i)) {
     frame(f);
     if (dbg) {
-      const [hx, hy] = center(path[f]);
+      const hp = posAt(f / SUB), [hx, hy] = center([((hp[0] + 1) % WRAP + WRAP) % WRAP - 1, hp[1]]);
       const ox = Math.max(0, Math.min(W - dbg.w, Math.round(hx - dbg.w / 2))), oy = Math.max(0, Math.min(H - dbg.h, Math.round(hy - dbg.h / 2)));
       const rw = dbg.w * dbg.s, rh = dbg.h * dbg.s, sub = new Uint8Array(rw * rh);
       for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) sub[x + y * rw] = px[(ox + Math.floor(x / dbg.s)) + (oy + Math.floor(y / dbg.s)) * W];
@@ -188,7 +207,7 @@ function gif(theme) {
     const rw = x1 - x0 + 1, rh = y1 - y0 + 1, sub = new Uint8Array(rw * rh);
     for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) sub[x + y * rw] = px[(x0 + x) + (y0 + y) * W];
     prev.set(px);
-    push(0x21, 0xf9, 4, 0x04, ...u16(f === FRAMES - 1 ? 120 : 6), 0, 0);
+    push(0x21, 0xf9, 4, 0x04, ...u16(3), 0, 0);   // ~30 fps, no pause: the wrap makes the loop point invisible
     push(0x2c, ...u16(x0), ...u16(y0), ...u16(rw), ...u16(rh), 0, 4);
     const data = lzw(sub, 4);
     for (let i = 0; i < data.length; i += 255) { const chunk = data.slice(i, i + 255); parts.push(Buffer.from([chunk.length, ...chunk])); }
