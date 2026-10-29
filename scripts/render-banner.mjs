@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 const COLS = 110, ROWS = 28;          // character grid
 const CW = 8, CH = 16;                // pixels per cell
-const FRAMES = 120, DELAY = 10;        // 10 fps, 7.2 s seamless loop
+const FRAMES = 150, DELAY = 10;        // 10 fps, 7.2 s seamless loop
 const LEVELS = 7;                     // grey ramp steps above the background
 const BG = [13, 17, 23];              // GitHub dark canvas, so the banner melts into it
 const FG = [230, 237, 243];
@@ -72,15 +72,15 @@ function scene(frame) {
   // a distant dragon, hazy and a shade lighter than the sky, crossing the whole banner right to left once per loop.
   // Its swell is fixed to the ground, so every segment follows the head's track and the undulation moves at flying speed.
   {
-    const L = 26, hx = (COLS + 36) * (1 - frame / FRAMES) - 18, baseY = 5.5 + Math.sin(p) * 0.8;
+    const L = 60, hx = (COLS + L + 12) * (1 - frame / FRAMES) - (L + 6), baseY = 5.5 + Math.sin(p) * 0.8;
     const trackY = (wx) => Math.round(baseY + 1.1 * Math.sin(wx * 0.24));
     const ghost = (x, y, c, lift) => { if (x < 0 || y < 0 || x >= COLS || y >= HZ) return; const i = x + y * COLS; if (lv[i] < 0.5) set(x, y, c, lv[i] + lift); };
     for (let i = 2; i < L; i++) {
       const x = Math.round(hx + i), y = trackY(hx + i);
-      const thick = i < L - 7;                                   // the tail thins to one row
+      const thick = i < L - 12;                                   // the tail thins to one row
       ghost(x, y - 1, "░", 0.12); ghost(x, y + (thick ? 2 : 1), "░", 0.12);   // soft halo
       ghost(x, y, i > L - 4 ? "▒" : "▓", 0.32); if (thick) ghost(x, y + 1, "▓", 0.28);
-      if (i === 9 || i === 17) { const up = (Math.floor(frame / 9) + (i === 9 ? 0 : 1)) % 2 === 0; ghost(x, y + (up ? -2 : 3), "▒", 0.24); ghost(x + 1, y + (up ? -3 : 4), "░", 0.16); }   // slow wingbeats
+      if (i % 10 === 9 && i < L - 12) { const up = (Math.floor(frame / 9) + Math.floor(i / 10)) % 2 === 0; ghost(x, y + (up ? -2 : 3), "▒", 0.24); ghost(x + 1, y + (up ? -3 : 4), "░", 0.16); }   // slow wingbeats
     }
     // the head in profile: a flat skull, a snout reaching forward, a jaw below, horns swept back
     const x = Math.round(hx), y = trackY(hx);
