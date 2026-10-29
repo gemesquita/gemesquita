@@ -60,9 +60,21 @@ for (let c = 0; c < COLS; c++) {
 while (headAt()[1] !== START_ROW || headAt()[0] < COLS) { const [hx, hy] = headAt(); path.push(hy === START_ROW || path.length % 2 ? [hx + 1, hy] : [hx, hy + Math.sign(START_ROW - hy)]); targets.push(null); }
 while (headAt()[0] < XS + WRAP) { path.push([headAt()[0] + 1, START_ROW]); targets.push(null); }
 const STEPS = path.length - 1;        // step i runs path[i] -> path[i+1]; frame f sits at t = f / SUB
-const FRAMES = STEPS * SUB;           // frame FRAMES would equal frame 0 shifted by WRAP, so the loop is seamless
 const posAt = (t) => { if (t <= 0) return [XS + t, START_ROW]; const i = Math.min(STEPS - 1, Math.floor(t)), fr = t - i, a = path[i], b = path[i + 1]; return [a[0] + (b[0] - a[0]) * fr, a[1] + (b[1] - a[1]) * fr]; };
 const dirAt = (t) => { if (t < 0) return [1, 0]; const i = Math.min(STEPS - 1, Math.floor(t)), a = path[i], b = path[i + 1]; const d = [b[0] - a[0], b[1] - a[1]]; return d[0] || d[1] ? d : [1, 0]; };
+
+// ---------- pearls: bites, the daily flaming pearl, and the surge it triggers ----------
+const bites = []; for (let i = 1; i <= STEPS; i++) if (targets[i - 1] && path[i][0] === targets[i - 1][0] && path[i][1] === targets[i - 1][1]) bites.push(i);   // steps where the head lands on a pearl
+const biteSet = new Set(bites);
+function rng(seed) { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+const seed = (counts.reduce((a, b) => a + b, 0) * 131 + Math.floor(Date.now() / 86400000)) >>> 0;   // changes with the day, so the flaming pearl moves on every nightly render
+const FLAME_STEP = bites.length ? bites[Math.floor(rng(seed)() * bites.length)] : -1;
+const FLAME_CELL = FLAME_STEP > 0 ? path[FLAME_STEP] : null;
+const SURGE_STEPS = 8;                // after eating the flaming pearl the dragon runs at double speed with its fur flared
+const inSurge = (i) => FLAME_STEP > 0 && i >= FLAME_STEP && i < FLAME_STEP + SURGE_STEPS;
+const tOf = []; for (let i = 0; i < STEPS; i++) { const subs = inSurge(i) ? SUB / 2 : SUB; for (let s = 0; s < subs; s++) tOf.push(i + s / subs); }
+const FRAMES = tOf.length;            // frame FRAMES would equal frame 0 shifted by WRAP, so the loop is seamless
+let FLARE = 1;                        // fur length multiplier during the surge
 
 // ---------- pixels ----------
 const CELL = 18, GAP = 4, BLOCK = CELL - GAP, PAD = 16;
@@ -169,8 +181,8 @@ function trim(t, shift, idx, grow) {
       // fur: two hairs per cell on each side, flowing with the body
       for (const o of [-4, 4]) for (const s of [1, -1]) {
         const bx = cx + d[0] * o, by = cy + d[1] * o;
-        prect(bx, by, perp, s, TUBE / 2 - 1, (o < 0 ? 4 : 3) + grow, 4 + 2 * grow, idx);   // alternate long and short hairs
-        if (o < 0) prect(bx, by, perp, s, TUBE / 2 + 3, 2 + grow, 2 + 2 * grow, idx);
+        prect(bx, by, perp, s, TUBE / 2 - 1, Math.round((o < 0 ? 4 : 3) * FLARE) + grow, 4 + 2 * grow, idx);   // alternate long and short hairs
+        if (o < 0) prect(bx, by, perp, s, TUBE / 2 - 1 + Math.round(4 * FLARE), Math.round(2 * FLARE) + grow, 2 + 2 * grow, idx);
       }
       if (k % 5 === 2) for (const s of [1, -1]) {
         prect(cx, cy, perp, s, TUBE / 2 - 1, 8 + grow, 3 + 2 * grow, idx);
@@ -193,7 +205,8 @@ function drawBody(t, shift) {
 }
 function frame(f) {
   px.fill(0);
-  const t = f / SUB, step = Math.floor(t), hx = posAt(t)[0];
+  const t = tOf[f], step = Math.floor(t), hx = posAt(t)[0];
+  FLARE = inSurge(step) ? 1 + 0.8 * Math.sin(Math.PI * ((t - FLAME_STEP) / SURGE_STEPS)) : 1;
   // cells the head has reached so far
   const eatenNow = new Uint8Array(COLS * ROWS);
   for (let i = 0; i <= step; i++) { const [c, r] = path[i]; if (c >= 0 && c < COLS && r >= 0 && r < ROWS) eatenNow[c + r * COLS] = 1; }
@@ -201,13 +214,36 @@ function frame(f) {
   const wipeStart = COLS + LEN - 1, wipeEnd = XS + WRAP - 1;
   const front = hx >= wipeEnd ? COLS : hx >= wipeStart ? Math.floor(((hx - wipeStart) / (wipeEnd - wipeStart)) * COLS) : 0;
   for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) rect(PAD + c * CELL, PAD + r * CELL, BLOCK, BLOCK, 1 + (eatenNow[c + r * COLS] && c >= front ? 0 : base[c + r * COLS]));
-  if (targets[step]) { const [tx, ty] = center(targets[step]); disc(tx, ty, 7, ACC); disc(tx, ty, 5, 0); disc(tx, ty, 3, BODY); }   // the pearl
   const blink = f > 5 && f % BLINK_EVERY < BLINK_FRAMES, head = posAt(t), dir = dirAt(t);
+  const tg = targets[step];
+  // pearls: the current one breathes and carries an orbiting glint; the flaming pearl burns on its cell from the start
+  const pulse = Math.round(Math.sin(f * 0.22));
+  const drawPearl = (cell, flaming) => {
+    const [tx, ty] = center(cell);
+    if (flaming) {
+      for (let k = -2; k <= 2; k++) {   // flickering tongues of flame over the top half
+        const ang = -Math.PI / 2 + k * 0.55 + (f % 2 ? 0.12 : -0.12), len = 4 + ((f + k + 10) % 3) * 2;
+        for (let j = 0; j <= len; j += 2) rect(Math.round(tx + Math.cos(ang) * (9 + j)) - 1, Math.round(ty + Math.sin(ang) * (9 + j)) - 1, 2, 2, j < len ? HI : ACC);
+      }
+      disc(tx, ty, 9, ACC); disc(tx, ty, 7, 0); disc(tx, ty, 5, HI);
+    } else {
+      disc(tx, ty, 7 + pulse, ACC); disc(tx, ty, 5 + pulse, 0); disc(tx, ty, 3, BODY);
+      const ga = f * 0.2; rect(Math.round(tx + Math.cos(ga) * (6 + pulse)) - 1, Math.round(ty + Math.sin(ga) * (6 + pulse)) - 1, 2, 2, HI);
+    }
+  };
+  const isFlame = (cell) => FLAME_CELL && cell && cell[0] === FLAME_CELL[0] && cell[1] === FLAME_CELL[1];
+  if (FLAME_CELL && !eatenNow[FLAME_CELL[0] + FLAME_CELL[1] * COLS]) drawPearl(FLAME_CELL, true);
+  if (tg && !isFlame(tg)) drawPearl(tg, false);
   // jaws open when a cell is within reach and stay open for a couple of frames after the bite
-  const tg = targets[step], near = tg ? Math.abs(tg[0] - head[0]) + Math.abs(tg[1] - head[1]) <= 1.3 : false;
-  const justAte = step > 0 && targets[step - 1] && path[step][0] === targets[step - 1][0] && path[step][1] === targets[step - 1][1] && t - step < 0.7;
+  const near = tg ? Math.abs(tg[0] - head[0]) + Math.abs(tg[1] - head[1]) <= 1.3 : false;
+  const justAte = biteSet.has(step) && t - step < 0.7;
   const open = near || justAte;
   for (const shift of [0, -WRAP, WRAP]) { drawBody(t, shift); drawHead([head[0] + shift, head[1]], dir, blink, open); }   // drawn thrice so it wraps across the edges
+  // bite burst: sparks fly from the jaws for a moment after each pearl is eaten; the flaming pearl throws twice as many
+  for (const i of [step - 1, step]) if (biteSet.has(i) && t - i >= 0 && t - i < 1.5) {
+    const age = t - i, [bx, by] = center(path[i]), r0 = rng(i * 7919 + seed)(), n = i === FLAME_STEP ? 10 : 5;
+    for (let k = 0; k < n; k++) { const ang = r0 * 6.28 + (k * 6.28) / n, d = 4 + age * 12; rect(Math.round(bx + Math.cos(ang) * d) - 1, Math.round(by + Math.sin(ang) * d) - 1, 2, 2, age < 0.8 ? HI : ACC); }
+  }
 }
 
 // ---------- GIF ----------
@@ -244,7 +280,7 @@ function gif(theme) {
   for (const f of only || Array.from({ length: FRAMES }, (_, i) => i)) {
     frame(f);
     if (dbg) {
-      const hp = posAt(f / SUB), [hx, hy] = center([((hp[0] + 1) % WRAP + WRAP) % WRAP - 1, hp[1]]);
+      const hp = posAt(tOf[f]), [hx, hy] = center([((hp[0] + 1) % WRAP + WRAP) % WRAP - 1, hp[1]]);
       const ox = Math.max(0, Math.min(W - dbg.w, Math.round(hx - dbg.w / 2))), oy = Math.max(0, Math.min(H - dbg.h, Math.round(hy - dbg.h / 2)));
       const rw = dbg.w * dbg.s, rh = dbg.h * dbg.s, sub = new Uint8Array(rw * rh);
       for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) sub[x + y * rw] = px[(ox + Math.floor(x / dbg.s)) + (oy + Math.floor(y / dbg.s)) * W];
@@ -271,6 +307,7 @@ function gif(theme) {
   return Buffer.concat(parts);
 }
 
+console.log(`${bites.length} pearls, flaming pearl at step ${FLAME_STEP} (frame ${tOf.indexOf(FLAME_STEP)})`);
 const dir = resolve(dirname(fileURLToPath(import.meta.url)), "..", "assets");
 mkdirSync(dir, { recursive: true });
 for (const [name, theme] of Object.entries(themes)) {
