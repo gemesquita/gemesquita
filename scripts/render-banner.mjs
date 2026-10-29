@@ -69,6 +69,18 @@ function scene(frame) {
     if (a > 0.32) set(x, y, a > 0.75 ? "▓" : a > 0.5 ? "▒" : "░", 0.26 + a * 0.36);
     else set(x, y, v > 0.6 ? "▒" : "░", 0.08 + v * 0.16);
   }
+  // a distant dragon, hazy and a shade lighter than the sky, crossing right to left once per loop
+  {
+    const L = 16, hx = (COLS + 30) * (1 - frame / FRAMES) - 15, baseY = 5.5 + Math.sin(p) * 1.5;
+    const ghost = (x, y, c, lift) => { if (x < 0 || y < 0 || x >= COLS || y >= HZ) return; const i = x + y * COLS; if (lv[i] < 0.5) set(x, y, c, lv[i] + lift); };
+    for (let i = 0; i < L; i++) {
+      const x = Math.round(hx + i), y = Math.round(baseY + 2 * Math.sin(i * 0.5 - frame * 0.35));
+      ghost(x, y - 1, "░", 0.12); ghost(x, y + 1, "░", 0.12);                 // soft halo
+      ghost(x, y, i === 0 ? "▓" : i > L - 4 ? "▒" : "▓", i === 0 ? 0.42 : 0.32);   // head, body, tapering tail
+      if (i === 5 || i === 10) { const up = (Math.floor(frame / 6) + (i === 5 ? 0 : 1)) % 2 === 0; ghost(x, y + (up ? -2 : 2), "▒", 0.26); ghost(x + 1, y + (up ? -3 : 3), "░", 0.18); }   // slow wingbeats
+    }
+    if (hx > -L && hx < COLS) { const x = Math.round(hx), y = Math.round(baseY + 2 * Math.sin(-frame * 0.35)); ghost(x - 1, y - 1, "·", 0.12); }   // a horn
+  }
   for (const [sx, sy, b, ph] of stars) if (Math.sin(3 * p + ph) > -0.3) setOv(sx, sy, b > 0.85 ? "*" : "·", b > 0.6 ? 0.9 : 0.6);
 
   // the sea: rolling swell with aurora light smeared on it
@@ -169,7 +181,8 @@ for (let i = 1; i <= LEVELS; i++) pal.push(BG.map((c, k) => Math.round(c + (FG[k
 push(...pal.flat());
 push(0x21, 0xff, 0x0b, ...Buffer.from("NETSCAPE2.0"), 3, 1, 0, 0, 0);  // loop forever
 
-for (let f = 0; f < FRAMES; f++) {
+const only = process.env.DEBUG_FRAME ? [Number(process.env.DEBUG_FRAME)] : null;   // DEBUG_FRAME=n writes a single still frame
+for (const f of only || Array.from({ length: FRAMES }, (_, i) => i)) {
   scene(f);
   const data = lzw(rasterize(), 3);
   push(0x21, 0xf9, 4, 0x04, ...u16(DELAY), 0, 0);
