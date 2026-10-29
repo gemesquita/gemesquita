@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// Renders assets/contact-<name>-dark.svg and -light.svg: large outlined tiles
-// for the contact links at the bottom of the README, each with a glyph and a
-// small label. The README wraps each one in a link.
+// Renders assets/contact-<name>-dark.svg and -light.svg: the contact links as
+// hand-drawn pixel sprites in the dragon's language (dark outline, fill,
+// top-left highlight, bottom-right shadow), with a small label under each.
+// The README wraps each one in a link.
 //
 //   node scripts/render-contact.mjs
 
@@ -9,38 +10,89 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const LINKS = [
-  { name: "linkedin", label: "LinkedIn", slug: null },      // LinkedIn's mark is not in the icon set, so it gets an original "in" lettermark
-  { name: "email", label: "Email", slug: "gmail" },
-  { name: "instagram", label: "Instagram", slug: "instagram" },
-];
+// O outline, # fill, * highlight, = shadow, . empty
+const SPRITES = {
+  linkedin: {
+    label: "LinkedIn",
+    rows: [
+      ".OOOO..........",
+      ".O*#O..........",
+      ".O*#O..........",
+      ".OOOO..........",
+      "...............",
+      ".OOOO.OOOOOOOOO",
+      ".O*#O.O*######O",
+      ".O*#O.O*#O.O#=O",
+      ".O*#O.O*#O.O#=O",
+      ".O*#O.O*#O.O#=O",
+      ".O*#O.O*#O.O#=O",
+      ".O*#O.O*#O.O#=O",
+      ".OOOO.OOOO.OOOO",
+    ],
+  },
+  email: {
+    label: "Email",
+    rows: [
+      "OOOOOOOOOOOOOOO",
+      "O*############O",
+      "O*O#########O#O",
+      "O*#O#######O##O",
+      "O*##O#####O###O",
+      "O*###O###O####O",
+      "O*####O#O#####O",
+      "O*#####O######O",
+      "O*############O",
+      "O=############O",
+      "O=============O",
+      "OOOOOOOOOOOOOOO",
+    ],
+  },
+  instagram: {
+    label: "Instagram",
+    rows: [
+      "..OOOOOOOOOOO..",
+      ".O*#########=O.",
+      "O*##########O=O",
+      "O*####OOO####=O",
+      "O*###O###O###=O",
+      "O*##O##*##O##=O",
+      "O*##O#*###O##=O",
+      "O*##O#####O##=O",
+      "O*###O###O###=O",
+      "O*####OOO####=O",
+      "O*###########=O",
+      "O*###########=O",
+      "O=###########=O",
+      ".O===========O.",
+      "..OOOOOOOOOOO..",
+    ],
+  },
+};
 
-async function icon(slug) {
-  for (const v of ["latest", "16", "15"]) {
-    const r = await fetch(`https://cdn.jsdelivr.net/npm/simple-icons@${v}/icons/${slug}.svg`);
-    if (!r.ok) continue;
-    const m = (await r.text()).match(/<path d="([^"]+)"/);
-    if (m) return m[1];
-  }
-  throw new Error(`no icon for ${slug}`);
-}
-
-const W = 96, H = 110, TILE = 64, X = (W - TILE) / 2;
-const SANS = "'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif";
+const THEMES = {
+  dark: { out: "#3e4652", fill: "#dee4eb", hi: "#ffffff", sh: "#969ea8", mute: "#8b949e" },
+  light: { out: "#161616", fill: "#767676", hi: "#a0a0a0", sh: "#484848", mute: "#6f6f6c" },
+};
+const CH = 3, W = 96, ART = 48, H = 72;   // 3px chunks; sprites sit in a 48px box, label below
 const MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
-function svg(link, path, { fg, mute, line }) {
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${link.label}">\n`;
-  if (path) s += `<path transform="translate(${X + 14} 14) scale(${(36 / 24).toFixed(3)})" d="${path}" fill="${fg}"/>\n`;
-  else s += `<text x="${W / 2}" y="46" text-anchor="middle" font-family="${SANS}" font-size="38" font-weight="800" letter-spacing="-2" fill="${fg}">in</text>\n`;
-  s += `<text x="${W / 2}" y="92" text-anchor="middle" font-family="${MONO}" font-size="9.5" letter-spacing="2" fill="${mute}">${link.label.toUpperCase()}</text>\n`;
+
+function svg(sprite, t) {
+  const rows = sprite.rows, w = rows[0].length * CH, h = rows.length * CH;
+  const x0 = Math.round((W - w) / 2), y0 = Math.round((ART - h) / 2);
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${sprite.label}" shape-rendering="crispEdges">\n`;
+  rows.forEach((row, r) => [...row].forEach((ch, c) => {
+    const fill = ch === "O" ? t.out : ch === "#" ? t.fill : ch === "*" ? t.hi : ch === "=" ? t.sh : null;
+    if (fill) s += `<rect x="${x0 + c * CH}" y="${y0 + r * CH}" width="${CH}" height="${CH}" fill="${fill}"/>\n`;
+  }));
+  s += `<text x="${W / 2}" y="${H - 6}" text-anchor="middle" font-family="${MONO}" font-size="9.5" letter-spacing="2" fill="${t.mute}">${sprite.label.toUpperCase()}</text>\n`;
   return s + `</svg>\n`;
 }
 
 const dir = resolve(dirname(fileURLToPath(import.meta.url)), "..", "assets");
 mkdirSync(dir, { recursive: true });
-for (const link of LINKS) {
-  const path = link.slug ? await icon(link.slug) : null;
-  writeFileSync(resolve(dir, `contact-${link.name}-dark.svg`), svg(link, path, { fg: "#e6edf3", mute: "#8b949e", line: "#30363d" }));
-  writeFileSync(resolve(dir, `contact-${link.name}-light.svg`), svg(link, path, { fg: "#0b0b0b", mute: "#6f6f6c", line: "#dcdcdc" }));
+for (const [name, sprite] of Object.entries(SPRITES)) {
+  const widths = new Set(sprite.rows.map((r) => r.length));
+  if (widths.size !== 1) throw new Error(`${name}: rows differ in width`);
+  for (const [theme, t] of Object.entries(THEMES)) writeFileSync(resolve(dir, `contact-${name}-${theme}.svg`), svg(sprite, t));
 }
-console.log(LINKS.map((l) => l.name).join(", "));
+console.log(Object.keys(SPRITES).join(", "));
