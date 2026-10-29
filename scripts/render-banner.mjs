@@ -69,17 +69,23 @@ function scene(frame) {
     if (a > 0.32) set(x, y, a > 0.75 ? "▓" : a > 0.5 ? "▒" : "░", 0.26 + a * 0.36);
     else set(x, y, v > 0.6 ? "▒" : "░", 0.08 + v * 0.16);
   }
-  // a distant dragon, hazy and a shade lighter than the sky, crossing right to left once per loop
+  // a distant dragon, hazy and a shade lighter than the sky: a long slow swell, two rows thick, with a bigger horned head.
+  // It drifts across the middle of the sky once per loop, fading in and out so the loop point stays invisible.
   {
-    const L = 16, hx = (COLS + 30) * (1 - frame / FRAMES) - 15, baseY = 5.5 + Math.sin(p) * 1.5;
-    const ghost = (x, y, c, lift) => { if (x < 0 || y < 0 || x >= COLS || y >= HZ) return; const i = x + y * COLS; if (lv[i] < 0.5) set(x, y, c, lv[i] + lift); };
+    const L = 24, travel = 70, env = Math.min(1, Math.sin((Math.PI * frame) / FRAMES) * 1.5);
+    const hx = COLS / 2 + travel / 2 - (frame / FRAMES) * travel, baseY = 5.5 + Math.sin(p) * 0.8;
+    const ghost = (x, y, c, lift) => { if (x < 0 || y < 0 || x >= COLS || y >= HZ) return; const i = x + y * COLS; if (lv[i] < 0.5) set(x, y, c, lv[i] + lift * env); };
     for (let i = 0; i < L; i++) {
-      const x = Math.round(hx + i), y = Math.round(baseY + 2 * Math.sin(i * 0.5 - frame * 0.35));
-      ghost(x, y - 1, "░", 0.12); ghost(x, y + 1, "░", 0.12);                 // soft halo
-      ghost(x, y, i === 0 ? "▓" : i > L - 4 ? "▒" : "▓", i === 0 ? 0.42 : 0.32);   // head, body, tapering tail
-      if (i === 5 || i === 10) { const up = (Math.floor(frame / 6) + (i === 5 ? 0 : 1)) % 2 === 0; ghost(x, y + (up ? -2 : 2), "▒", 0.26); ghost(x + 1, y + (up ? -3 : 3), "░", 0.18); }   // slow wingbeats
+      const x = Math.round(hx + i), y = Math.round(baseY + 1.1 * Math.sin(i * 0.26 - frame * 0.1));
+      const thick = i < L - 7;                                   // the tail thins to one row
+      ghost(x, y - 1, "░", 0.12); ghost(x, y + (thick ? 2 : 1), "░", 0.12);   // soft halo
+      ghost(x, y, i > L - 4 ? "▒" : "▓", 0.32); if (thick) ghost(x, y + 1, "▓", 0.28);
+      if (i === 8 || i === 16) { const up = (Math.floor(frame / 9) + (i === 8 ? 0 : 1)) % 2 === 0; ghost(x, y + (up ? -2 : 3), "▒", 0.24); ghost(x + 1, y + (up ? -3 : 4), "░", 0.16); }   // slow wingbeats
     }
-    if (hx > -L && hx < COLS) { const x = Math.round(hx), y = Math.round(baseY + 2 * Math.sin(-frame * 0.35)); ghost(x - 1, y - 1, "·", 0.12); }   // a horn
+    // the head: three rows tall and three columns wide, a little brighter, with two horns
+    const x = Math.round(hx), y = Math.round(baseY + 1.1 * Math.sin(-frame * 0.1));
+    for (let dx = -2; dx <= 0; dx++) for (let dy = -1; dy <= 1; dy++) ghost(x + dx, y + dy, "▓", 0.4);
+    ghost(x - 3, y, "▒", 0.3); ghost(x - 1, y - 2, "·", 0.3); ghost(x, y - 2, "·", 0.3);
   }
   for (const [sx, sy, b, ph] of stars) if (Math.sin(3 * p + ph) > -0.3) setOv(sx, sy, b > 0.85 ? "*" : "·", b > 0.6 ? 0.9 : 0.6);
 
