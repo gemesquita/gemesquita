@@ -76,8 +76,25 @@ const THEMES = {
 const CH = 3, W = 96, ART = 48, H = 72;   // 3px chunks; sprites sit in a 48px box, label below
 const MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 
+// Lighting is computed from the silhouette rather than placed by hand: fill chunks on the outer top or left
+// edge are lit, fill chunks on the outer bottom or right edge are shaded (bottom/right wins at a corner).
+function shade(rows) {
+  const Hh = rows.length, Ww = rows[0].length;
+  const at = (c, r) => (c < 0 || r < 0 || c >= Ww || r >= Hh ? "." : rows[r][c] === "*" || rows[r][c] === "=" ? "#" : rows[r][c]);
+  // flood the outside from the border through empty cells
+  const outside = new Set(); const stack = [];
+  for (let r = -1; r <= Hh; r++) for (let c = -1; c <= Ww; c++) if ((r < 0 || r >= Hh || c < 0 || c >= Ww)) stack.push([c, r]);
+  while (stack.length) { const [c, r] = stack.pop(); const k = `${c},${r}`; if (outside.has(k) || c < -1 || r < -1 || c > Ww || r > Hh || at(c, r) !== ".") continue; outside.add(k); stack.push([c + 1, r], [c - 1, r], [c, r + 1], [c, r - 1]); }
+  const outer = (c, r) => outside.has(`${c},${r}`) || (at(c, r) === "O" && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => outside.has(`${c + dx},${r + dy}`)));
+  return rows.map((row, r) => [...row].map((ch, c) => {
+    if (at(c, r) !== "#") return at(c, r);
+    if (outer(c, r + 1) || outer(c + 1, r)) return "=";
+    if (outer(c, r - 1) || outer(c - 1, r)) return "*";
+    return "#";
+  }).join(""));
+}
 function svg(sprite, t) {
-  const rows = sprite.rows, w = rows[0].length * CH, h = rows.length * CH;
+  const rows = shade(sprite.rows), w = rows[0].length * CH, h = rows.length * CH;
   const x0 = Math.round((W - w) / 2), y0 = Math.round((ART - h) / 2);
   let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${sprite.label}" shape-rendering="crispEdges">\n`;
   rows.forEach((row, r) => [...row].forEach((ch, c) => {
